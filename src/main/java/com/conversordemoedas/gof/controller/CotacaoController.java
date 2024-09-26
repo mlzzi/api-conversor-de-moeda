@@ -1,15 +1,16 @@
 package com.conversordemoedas.gof.controller;
 
 import com.conversordemoedas.gof.model.Cotacao;
-import com.conversordemoedas.gof.model.CotacaoRepository;
 import com.conversordemoedas.gof.service.CotacaoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/cotacoes")
+@Validated
 public class CotacaoController {
 
     @Autowired

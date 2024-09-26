@@ -1,6 +1,7 @@
 package com.conversordemoedas.gof.service.impl;
 
 import com.conversordemoedas.gof.adapter.Adapter;
+import com.conversordemoedas.gof.dto.OpenExchangeResponse;
 import com.conversordemoedas.gof.model.Cotacao;
 import com.conversordemoedas.gof.model.CotacaoRepository;
 import com.conversordemoedas.gof.service.CotacaoService;
@@ -18,8 +19,11 @@ public class CotacaoServiceImpl implements CotacaoService {
     @Autowired
     private OpenExchangeService openExchangeService;
 
-    @Value("${app_id}") // Injetando o valor do app_id do arquivo de propriedades
+    @Value("${app_id}")
     private String appId;
+
+    @Autowired
+    private Adapter adapter;
 
     @Override
     public Iterable<Cotacao> buscarTodasCotacoes() {
@@ -42,20 +46,15 @@ public class CotacaoServiceImpl implements CotacaoService {
     }
 
     private void salvarCotacao(Cotacao cotacao) {
-        String moedas = cotacao.getMoedaPesquisada();
-        Adapter adapter = openExchangeService.consultarCotacao(appId, moedas);
+        String moedas = cotacao.getMoedasPesquisadas();
+        OpenExchangeResponse openExchangeResponse = openExchangeService.consultarCotacao(appId, moedas + ",BRL");
 
-        // Extract relevant data from the Adapter object
-        String timestamp = String.valueOf(adapter.getTimestamp() * 2);
-        String base = adapter.getBase();
-        Double rate = adapter.getRates().get(moedas);
+        Cotacao cotacaoConvertida = adapter.converterCotacao(openExchangeResponse, moedas);
 
-        // Set the extracted values to the Cotacao entity
-        cotacao.setMoedaPesquisada(base);
-        cotacao.setValorEmReal(String.valueOf(rate));
-        cotacao.setDataDaCotacao(timestamp);
+        cotacao.setBase(cotacaoConvertida.getBase());
+        cotacao.setData(cotacaoConvertida.getData());
+        cotacao.setCotacoes(cotacaoConvertida.getCotacoes());
 
-        // Save the cotacao entity
         cotacaoRepository.save(cotacao);
     }
 }

@@ -1,6 +1,6 @@
 package com.conversordemoedas.gof.adapterTest;
 
-import com.conversordemoedas.gof.adapter.Adapter;
+import com.conversordemoedas.gof.dto.OpenExchangeResponse;
 import com.conversordemoedas.gof.service.OpenExchangeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,8 @@ public class TestRealAPI {
     @Test
     public void testConsultarCotacaoReal() {
         String moedas = "EUR,BRL,BOB"; // Adicione as moedas desejadas
-        Adapter resultado = openExchangeService.consultarCotacao(appId, moedas);
+        String moedaBase = "BRL";
+        OpenExchangeResponse resultado = openExchangeService.consultarCotacao(appId, moedas);
 
         // Verifique a resposta completa da API
         System.out.println("Resposta completa: " + resultado);
