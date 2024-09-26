@@ -1,79 +1,69 @@
 package com.conversordemoedas.gof.adapter;
 
-import com.conversordemoedas.gof.model.CotacaoRepository;
+import com.conversordemoedas.gof.dto.OpenExchangeResponse;
+import com.conversordemoedas.gof.model.Cotacao;
 import com.conversordemoedas.gof.service.OpenExchangeService;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 
+// Adapter para adaptar uma API que só fornece cotações com base no dolar, para fornecer cotações em real para outras moedas
+@Component
 public class Adapter {
 
     @Autowired
-    private CotacaoRepository cotacaoRepository;
-    @Value("${app_id}") // Injetando o valor do app_id do arquivo de propriedades
+    OpenExchangeService openExchangeService;
+
+    @Value("${app_id}")
     private String appId;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-    private Long timestamp;
-    private String base;
-    private Map<String, Double> rates;
 
-    private String data;
+    //Metodo para converter as cotacoes
+    public Cotacao converterCotacao(OpenExchangeResponse response, String moeda) {
 
-    public Long getId() {
-        return id;
+        Cotacao cotacao = new Cotacao();
+
+        cotacao.setData((converterTimestamp(response.getTimestamp())));
+        cotacao.setBase("BRL");
+        cotacao.setCotacoes(converterMoedas(response.getRates(), moeda));
+
+        return cotacao;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    // Converte timestamp em formado de data
+    public String converterTimestamp(Long timestamp) {
+
+        LocalDateTime horaDia = LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("America/Sao_Paulo"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        return horaDia.format(formatter);
     }
 
-    public Long getTimestamp() {
-        return timestamp;
-    }
+    //Metodo responsável por fazer as conversões
+    public Map<String, Double> converterMoedas(Map<String, Double> retornoApi, String moedas) {
 
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
-    }
+        Double precoReal = retornoApi.get("BRL").doubleValue();
+        Map<String, Double> moedasConvertidas = new HashMap<>(Map.of());
 
-    public String getBase() {
-        return base;
-    }
+        for (Map.Entry<String, Double> entry : retornoApi.entrySet()) {
+            String key = entry.getKey();
+            Double value = entry.getValue();
 
-    public void setBase(String base) {
-        this.base = base;
-    }
+            if (!entry.getKey().equals("BRL")) {
 
-    public Map<String, Double> getRates() {
-        return rates;
-    }
+                moedasConvertidas.put(key, Math.floor(precoReal / value * 100000.0) / 100000.0);
+            }
+        }
 
-    public void setRates(Map<String, Double> rates) {
-        this.rates = rates;
-    }
-
-    public String getData() {
-        return data;
-    }
-
-    public void setData(String data) {
-        this.data = String.valueOf(timestamp * 2);
-        ;
-    }
-
-    @Override
-    public String toString() {
-        return "Adapter{" +
-                "timestamp=" + timestamp +
-                ", base='" + base + '\'' +
-                ", rates=" + rates +
-                '}';
+        if (moedas.contains("BRL")) {
+            moedasConvertidas.put("BRL", 1.00);
+        }
+        return moedasConvertidas;
     }
 }
-
